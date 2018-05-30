@@ -1,0 +1,87 @@
+# This job is used in order to be able to do some test
+# # oc new-build --name=backup-job --binary=true
+# 
+# 
+# oc start-build backup-job --from-dir=. && \
+#   sleep 5 && oc logs -f bc/backup-job
+# 
+# minishift ssh -- sudo df -h
+#
+# curl -0 https://raw.githubusercontent.com/mongodb/docs-assets/primer-dataset/primer-dataset.json > /tmp/data.json
+# mongoimport --db sampledb --collection restaurants --file /tmp/data.json
+#
+#
+apiVersion: extensions/v1beta1
+kind: Job
+metadata:
+  name: bck-mongodb
+spec:
+  selector:         
+    matchLabels:
+      app: bck-mongodb
+  parallelism: 1    
+  completions: 1    
+  template:         
+    metadata:
+      name: bck-mongodb
+      labels:
+        app: bck-mongodb
+    spec:
+      # serviceAccount: bck-pvc
+      volumes: {}
+      containers:
+      - name: bck-mongodb
+        image: 172.30.1.1:5000/backup-util/bck-tools:latest
+        command: ["/opt/data/bin/backup_mongodb_to_s3.sh"]
+        resources:
+          limits:
+            memory: 1Gi
+            cpu: 1000m
+          requests:
+            memory: 100Mi
+            cpu: 250m
+        volumeMounts: {}
+        env:
+          - name: S3_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: s3-mongodb
+                key: s3-access-key-id
+          - name: S3_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: s3-mongodb
+                key: s3-secret-access-key
+          - name: S3_BUCKET
+            valueFrom:
+              secretKeyRef:
+                name: s3-mongodb
+                key: s3-bucket
+          - name: S3_PREFIX
+            valueFrom:
+              secretKeyRef:
+                name: s3-mongodb
+                key: s3-prefix
+          - name: GPG_PASSPHRASE
+            valueFrom:
+              secretKeyRef:
+                name: s3-mongodb
+                key: gpg-passphrase
+          - name: MONGODB_USER
+            valueFrom:
+              secretKeyRef:
+                name: mongodb
+                key: database-user
+          - name: MONGODB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mongodb
+                key: database-password
+          - name: MONGODB_PORT
+            value: '27017'
+          - name: MONGODB_HOST
+            value: 'mongodb'
+          - name: MONGODB_DATABASE
+            value: sampledb
+
+      restartPolicy: Never

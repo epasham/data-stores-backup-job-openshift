@@ -1,0 +1,93 @@
+# This job is used in order to be able to do some test
+# # oc new-build --name=backup-job --binary=true
+# 
+# 
+# oc start-build backup-job --from-dir=. && \
+#   sleep 5 && oc logs -f bc/backup-job
+# 
+# minishift ssh -- sudo df -h
+#
+#
+# Remember on posgres, user should be able to backup/restore
+#
+# ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO <username>;
+# CREATE ROLE <username> SUPERUSER;
+# ALTER ROLE <username> CREATEDB;
+# ALTER USER <username> WITH PASSWORD '<password>';
+# ALTER USER <username> WITH LOGIN;
+#
+#
+apiVersion: extensions/v1beta1
+kind: Job
+metadata:
+  name: bck-postgres
+spec:
+  selector:         
+    matchLabels:
+      app: bck-postgres
+  parallelism: 1    
+  completions: 1    
+  template:         
+    metadata:
+      name: bck-postgres
+      labels:
+        app: bck-postgres
+    spec:
+      # serviceAccount: bck-pvc
+      volumes: {}
+      containers:
+      - name: bck-postgres
+        image: 172.30.1.1:5000/backup-util/bck-tools:latest
+        command: ["/opt/data/bin/backup_postgres_to_s3.sh"]
+        resources:
+          limits:
+            memory: 1Gi
+            cpu: 1000m
+          requests:
+            memory: 100Mi
+            cpu: 250m
+        volumeMounts: {}
+        env:
+          - name: S3_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: s3-postgres
+                key: s3-access-key-id
+          - name: S3_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: s3-postgres
+                key: s3-secret-access-key
+          - name: S3_BUCKET
+            valueFrom:
+              secretKeyRef:
+                name: s3-postgres
+                key: s3-bucket
+          - name: S3_PREFIX
+            valueFrom:
+              secretKeyRef:
+                name: s3-postgres
+                key: s3-prefix
+          - name: GPG_PASSPHRASE
+            valueFrom:
+              secretKeyRef:
+                name: s3-postgres
+                key: gpg-passphrase
+          - name: POSTGRES_USER
+            valueFrom:
+              secretKeyRef:
+                name: postgresql
+                key: database-user
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: postgresql
+                key: database-password
+          - name: POSTGRES_PORT
+            value: '5432'
+          - name: POSTGRES_HOST
+            value: 'postgresql'
+          - name: POSTGRES_DATABASE
+            value: sampledb
+
+      restartPolicy: Never

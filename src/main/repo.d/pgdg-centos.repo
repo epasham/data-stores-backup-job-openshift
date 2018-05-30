@@ -1,0 +1,14 @@
+[pgdg95]
+name=PostgreSQL 9.5 $releasever - $basearch
+baseurl=https://download.postgresql.org/pub/repos/yum/9.5/redhat/rhel-$releasever-$basearch
+enabled=0
+gpgcheck=1
+gpgkey=http://ftp.postgresql.org/pub/repos/yum/RPM-GPG-KEY-PGDG-95
+
+[pgdg95-source]
+name=PostgreSQL 9.5 $releasever - $basearch - Source
+failovermethod=priority
+baseurl=https://download.postgresql.org/pub/repos/yum/srpms/9.5/redhat/rhel-$releasever-$basearch
+enabled=0
+gpgcheck=1
+gpgkey=http://ftp.postgresql.org/pub/repos/yum/RPM-GPG-KEY-PGDG-95

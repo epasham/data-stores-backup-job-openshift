@@ -1,0 +1,79 @@
+# This job is used in order to be able to do some test
+# # oc new-build --name=backup-job --binary=true
+# 
+# 
+# oc start-build backup-job --from-dir=. && \
+#   sleep 5 && oc logs -f bc/backup-job
+# 
+# minishift ssh -- sudo df -h
+# DIR=$RANDOM && mkdir /usr/mock/source/$DIR
+# wget http://lorempixel.com/400/200/sports/ -O /usr/mock/source/$DIR/$RANDOM.jpg   
+#
+#
+apiVersion: extensions/v1beta1
+kind: Job
+metadata:
+  name: bck-pvc
+spec:
+  selector:         
+    matchLabels:
+      app: bck-pvc
+  parallelism: 1    
+  completions: 1    
+  template:         
+    metadata:
+      name: bck-pvc
+      labels:
+        app: bck-pvc
+    spec:
+      # serviceAccount: bck-pvc
+      volumes: 
+      - name: pvc-busybox-http-app
+        persistentVolumeClaim:
+          claimName: pvc-busybox-http-app
+      containers:
+      - name: bck-pvc
+        image: 172.30.1.1:5000/backup-util/bck-tools:latest
+        command: ["/opt/data/bin/backup_pvc_to_s3.sh"]
+        resources:
+          limits:
+            memory: 1Gi
+            cpu: 1000m
+          requests:
+            memory: 100Mi
+            cpu: 250m
+        volumeMounts: {}
+        volumeMounts:
+          - name: pvc-busybox-http-app
+            mountPath: /opt/data/source/
+        env:
+          - name: LOCAL_FILEPATH
+            value: /opt/data/source/
+          - name: S3_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: s3-pvc
+                key: s3-access-key-id
+          - name: S3_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: s3-postgres
+                key: s3-secret-access-key
+          - name: S3_BUCKET
+            valueFrom:
+              secretKeyRef:
+                name: s3-pvc
+                key: s3-bucket
+          - name: S3_PREFIX
+            valueFrom:
+              secretKeyRef:
+                name: s3-pvc
+                key: s3-prefix
+          - name: GPG_PASSPHRASE
+            valueFrom:
+              secretKeyRef:
+                name: s3-pvc
+                key: gpg-passphrase
+
+
+      restartPolicy: Never

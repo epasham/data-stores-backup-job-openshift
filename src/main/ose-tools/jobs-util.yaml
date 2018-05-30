@@ -1,0 +1,44 @@
+# This job is used in order to be able to do some test
+# # oc new-build --name=backup-job --binary=true
+# 
+# 
+# oc start-build backup-job --from-dir=. && \
+#   sleep 5 && oc logs -f bc/backup-job
+# 
+# minishift ssh -- sudo df -h
+#
+#
+#
+apiVersion: extensions/v1beta1
+kind: Job
+metadata:
+  name: role-utils
+spec:
+  selector:         
+    matchLabels:
+      app: role-utils
+  parallelism: 1    
+  completions: 1    
+  template:         
+    metadata:
+      name: role-utils
+      labels:
+        app: role-utils
+    spec:
+      # serviceAccount: bck-pvc
+      volumes: {}
+      containers:
+      - name: role-utils
+        image: 172.30.1.1:5000/backup-util/bck-tools:latest
+        command: ["tail", "-f", "/dev/null"]
+        resources:
+          limits:
+            memory: 1Gi
+            cpu: 1000m
+          requests:
+            memory: 100Mi
+            cpu: 250m
+        volumeMounts: {}
+        env:
+
+      restartPolicy: Never
