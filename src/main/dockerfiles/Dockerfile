@@ -1,6 +1,6 @@
 #FROM openshift/origin:v1.4.1
-#FROM openshift/origin-base
-FROM registry.access.redhat.com/rhel7
+FROM openshift/origin-base
+#FROM registry.access.redhat.com/rhel7
 
 
 MAINTAINER <kanedafromparis@gmail.com>
