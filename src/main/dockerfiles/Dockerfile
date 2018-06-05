@@ -5,7 +5,7 @@ FROM registry.access.redhat.com/rhel7
 
 MAINTAINER <kanedafromparis@gmail.com>
 
-#ARG  YUM_UPDATE=1 
+ARG  YUM_UPDATE=1 
 ARG  MYSQL_BACKUP=1 
 ARG  MONGODB_BACKUP=1
 ARG  POSTGRES_BACKUP=1
@@ -34,11 +34,11 @@ LABEL io.k8s.display-name="OpenShift backup cron job" \
 
 COPY ./src/main/repo.d/ /etc/yum.repos.d/
 
-# RUN if [ $YUM_UPDATE -eq 1 ]; then \
-#       echo " yum update " && yum --setopt=tsflags=nodocs clean all && yum --setopt=tsflags=nodocs upgrade -y ; \
-#     else \    
-#       echo " no yum update "; \
-#    fi;
+RUN if [ $YUM_UPDATE -eq 1 ]; then \
+      echo " yum update " && yum --setopt=tsflags=nodocs clean all && yum --setopt=tsflags=nodocs upgrade -y ; \
+    else \    
+      echo " no yum update "; \
+   fi;
 
 RUN echo "Installing required packages ..." \
  && INSTALL_PKGS=" s3cmd gnupg2 tar rsync mailx jq " \
