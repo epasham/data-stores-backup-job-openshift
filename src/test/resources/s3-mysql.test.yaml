@@ -1,0 +1,20 @@
+apiVersion: v1
+data:
+  # this is the Id of the S3 user
+  s3-access-key-id: QUtJQUk1U01FMlVDV05URkJYNUE=
+  # this is the Sccess key of the S3 user
+  s3-secret-access-key: ZmxYNTF0R0t6K2t0Mytsc3gwcUNTdDBtT3FhWk51VVBJUCtSM2ZOQw==
+  # this is the bucket where the back/restore will be placeS3 user
+  s3-bucket: YmFja3VwLXJlc3RvcmUtYnVja2V0
+  # this is the prefix aka subdirectory backup (good practice to have it as ${OPENSHIFT_NAMESPACE}/${DTBTYPE}_${DTBNAME}
+  # oc config current-context | cut -d "/" -f 1
+  s3-prefix: bXlzcWwvdGVzdGluZw==
+  #This passphrase is used for gpg encryption
+  gpg-passphrase: b29tKmVpLm45ZWVZNWVzaDZjaWUrWDNPaGI9YQ==
+kind: Secret
+metadata:
+  creationTimestamp: null
+  labels:
+    app: s3-backup-job
+  name: s3-mysql
+type: Opaque

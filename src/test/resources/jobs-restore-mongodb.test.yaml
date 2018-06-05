@@ -1,0 +1,101 @@
+# This job is used in order to be able to do some test
+# # oc new-build --name=backup-job --binary=true
+# 
+# 
+# oc start-build backup-job --from-dir=. && \
+#   sleep 5 && oc logs -f bc/backup-job
+# 
+#Please adapt this script to your need
+## serviceAccount
+## image URLS
+#
+apiVersion: extensions/v1beta1
+kind: Job
+metadata:
+  name: rst-mongodb
+  labels:
+    io.shyrka.erebus/scope: test
+    io.shyrka.erebus.tooling-info/role: mongodb-restore
+spec:
+  selector:         
+    matchLabels:
+      app: rst-mongodb
+  parallelism: 1    
+  completions: 1    
+  backoffLimit: 4
+  template:         
+    metadata:
+      name: rst-mongodb
+      labels:
+        app: rst-mongodb
+        io.shyrka.erebus.tooling-info/role: mongodb-restore
+    spec:
+      # serviceAccount: custom-pusher
+      volumes: {}
+      containers:
+      - name: rst-mongodb
+        image: 172.30.1.1:5000/backup-util/bck-tools:latest
+        command: ["/opt/data/bin/restore_mongodb_from_s3.sh"]
+        #command: ["tail", "-f", "/dev/null"]
+        resources:
+          limits:
+            memory: 1Gi
+            cpu: 1000m
+          requests:
+            memory: 100Mi
+            cpu: 250m
+        volumeMounts: {}
+        env:
+          - name: S3_REGION
+            valueFrom:
+              secretKeyRef:
+                name: s3-mongodb
+                key: s3-region
+          - name: S3_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: s3-mongodb
+                key: s3-access-key-id
+          - name: S3_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: s3-mongodb
+                key: s3-secret-access-key
+          - name: S3_BUCKET
+            valueFrom:
+              secretKeyRef:
+                name: s3-mongodb
+                key: s3-bucket
+          - name: S3_PREFIX
+            valueFrom:
+              secretKeyRef:
+                name: s3-mongodb
+                key: s3-prefix
+          # - name: GPG_PASSPHRASE
+          #   valueFrom:
+          #     secretKeyRef:
+          #       name: s3-mongodb
+          #       key: gpg-passphrase
+          - name: MONGODB_DATABASE
+            # separate with an " "
+            value: "sampledb"
+          - name: MULTI_FILES
+            value: "yes"
+          - name: MONGODB_USER
+            valueFrom:
+              secretKeyRef:
+                name: mongodb
+                key: database-user
+          - name: MONGODB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mongodb
+                key: database-password
+          - name: MONGODB_PORT
+            value: '27017'
+          - name: MONGODB_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mongodb
+                key: database-admin-password
+      restartPolicy: Never
