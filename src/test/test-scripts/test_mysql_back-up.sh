@@ -14,7 +14,7 @@ IFS=$'\n\t'
 
 #/ Usage: ./test_mysql_back-up.sh
 #/ Description: will start a mysql ephemeral database, fill it, backup it, change it, and restore it
-#/ Examples: ./run-tail.sh
+#/ Examples: ././test_mysql_back-up.sh
 #/ Options:
 #/   --help: Display this help message
 usage() { grep '^#/' "$0" | cut -c4- ; exit 0 ; }
@@ -34,6 +34,8 @@ cleanup() {
 }
 
 if [[ "${BASH_SOURCE[0]}" = "$0" ]]; then
+
+  
    # just to make sure the job is not there
    oc delete jobs -l io.shyrka.erebus.tooling-info/role=mysql-backup;
    oc delete jobs -l io.shyrka.erebus.tooling-info/role=mysql-restore;
@@ -44,14 +46,22 @@ if [[ "${BASH_SOURCE[0]}" = "$0" ]]; then
    EXPECTED_RES_04="103";
    EXPECTED_RES_05="105";
    EXPECTED_RES_06="Paris";
-   EXPECTED_RES_07="100";
-   EXPECTED_RES_08="100";
-   EXPECTED_RES_09="Marshall";
    #
-   # @ todo seperate it into several sub function
+   
+   JOB_SCRIPT_PATH=${JOB_SCRIPT_PATH:-"src/test/resources"};
+   info "`date +%Y-%m-%dT%H%M%SZ` JOB_SCRIPT_PATH is  ${JOB_SCRIPT_PATH}";
+   JOB_BACKUP=${JOB_BACKUP:-"jobs-backup-mysql.single.dtb.test.yaml"};
+   info "`date +%Y-%m-%dT%H%M%SZ` JOB_BACKUP is  ${JOB_BACKUP}";
+   JOB_RESTORE=${JOB_RESTORE:-"jobs-restore-mysql.test.yaml"};
+   info "`date +%Y-%m-%dT%H%M%SZ` JOB_RESTORE is  ${JOB_RESTORE}";
+
    info "initiate smaple dtb";
-   TMP_MYSQL_DATABASENAME="sampledb"
-   TMP_DUMP="src/test/resources/sampledtb.sql"
+   TMP_MYSQL_DATABASENAME=${TMP_MYSQL_DATABASENAME:-"sampledb"};
+   info "`date +%Y-%m-%dT%H%M%SZ` TMP_MYSQL_DATABASENAME is  ${TMP_MYSQL_DATABASENAME}";
+   
+   TMP_DUMP=${TMP_DUMP:-"src/test/resources/sampledtb.sql"};
+   info "`date +%Y-%m-%dT%H%M%SZ` TMP_DUMP is  ${TMP_DUMP}";
+   
    TMP_POD=$(oc get po | grep "mysql" | grep "Running" | cut -d " " -f 1) &&
    TMP_MYSQL_USER=$(oc exec $TMP_POD -- bash -c 'echo -n $MYSQL_USER') &&
    TMP_MYSQL_PASSWORD=$(oc exec $TMP_POD -- bash -c 'echo -n $MYSQL_PASSWORD') &&
@@ -85,7 +95,8 @@ if [[ "${BASH_SOURCE[0]}" = "$0" ]]; then
    
    oc delete jobs -l io.shyrka.erebus.tooling-info/role=mysql-backup;
    oc delete jobs -l io.shyrka.erebus.tooling-info/role=mysql-restore;
-   oc create -f src/test/resources/jobs-backup-mysql.single.dtb.test.yaml;
+   
+   oc create -f ${JOB_SCRIPT_PATH}/${JOB_BACKUP};
    
    while [ -z $(oc get po -l app=bck-mysql --no-headers | grep 'Completed') ] ; do 
      echo waiting;
@@ -111,7 +122,7 @@ if [[ "${BASH_SOURCE[0]}" = "$0" ]]; then
      fatal "expected \"${EXPECTED_RES_06}\" and it was \"${RES_06}\"";
    fi
    
-   oc create -f src/test/resources/jobs-restore-mysql.test.yaml;
+   oc create -f ${JOB_SCRIPT_PATH}/${JOB_RESTORE};
 
    while [ -z $(oc get po -l app=rst-mysql --no-headers | grep 'Completed') ] ; do 
      echo waiting;

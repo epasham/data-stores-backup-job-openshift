@@ -32,6 +32,7 @@ cleanup() {
 }
 
 if [[ "${BASH_SOURCE[0]}" = "$0" ]]; then
+  
    # just to make sure the job is not there
    oc delete jobs -l io.shyrka.erebus.tooling-info/role=mongodb-backup;
    oc delete jobs -l io.shyrka.erebus.tooling-info/role=mongodb-restore;
@@ -46,10 +47,24 @@ if [[ "${BASH_SOURCE[0]}" = "$0" ]]; then
    EXPECTED_RES_06="4179";
    
    # @ todo seperate it into several sub function
-   info "initiate sample collection";
-   TMP_MONGODB_DATABASENAME="sampledb";
-   TMP_MONGODB_COLLECTION="restaurants";
-   TMP_DUMP="src/test/resources/sample-primer-dataset.json";
+   info "initiate sample database and collection";
+   
+   JOB_SCRIPT_PATH=${JOB_SCRIPT_PATH:-"src/test/resources"};
+   info "`date +%Y-%m-%dT%H%M%SZ` JOB_SCRIPT_PATH is  ${JOB_SCRIPT_PATH}";
+   JOB_BACKUP=${JOB_BACKUP:-"jobs-backup-mongodb.single.dtb.test.camp.yaml"};
+   info "`date +%Y-%m-%dT%H%M%SZ` JOB_BACKUP is  ${JOB_BACKUP}";
+   JOB_RESTORE=${JOB_RESTORE:-"jobs-restore-mongodb.test.camp.yaml"};
+   info "`date +%Y-%m-%dT%H%M%SZ` JOB_RESTORE is  ${JOB_RESTORE}";
+   TMP_MONGODB_DATABASENAME=${TMP_MYSQL_DATABASENAME:-"sampledb"};
+   info "`date +%Y-%m-%dT%H%M%SZ` TMP_MYSQL_DATABASENAME is  ${TMP_MONGODB_DATABASENAME}";
+   
+   TMP_MONGODB_COLLECTION=${TMP_DUMP:-"restaurants"};
+   info "`date +%Y-%m-%dT%H%M%SZ` TMP_MONGODB_COLLECTION is  ${TMP_MONGODB_COLLECTION}";
+   
+   TMP_DUMP=${TMP_DUMP:-"src/test/resources/sample-primer-dataset.json"};
+   info "`date +%Y-%m-%dT%H%M%SZ` TMP_DUMP is  ${TMP_DUMP}";
+   
+   
    TMP_POD=$(oc get po | grep "mongodb" | grep "Running" | cut -d " " -f 1) &&
    TMP_MONGODB_USER=$(oc exec $TMP_POD -- bash -c 'echo -n $MONGODB_USER') &&
    TMP_MONGODB_PASSWORD=$(oc exec $TMP_POD -- bash -c 'echo -n $MONGODB_PASSWORD') &&
@@ -70,7 +85,7 @@ if [[ "${BASH_SOURCE[0]}" = "$0" ]]; then
    RES_03=$(oc exec -ti $TMP_POD -- bash -c " mongo --quiet --username=\$MONGODB_USER --host=\$MONGODB_SERVICE_HOST --port=\$MONGODB_SERVICE_PORT_MONGO --password=\$MONGODB_PASSWORD \$MONGODB_DATABASE --eval \"db.restaurants.find({'borough': {\\\$ne :'Brooklyn'}}).size();\" ");
    info $RES_03;
    if [[ "${EXPECTED_RES_00}" != "${RES_00%?}" ]]; then
-     fatal "expected \"${EXPECTED_RES_00}\" and it was \"${RES_00%?}\"";
+     warn "expected \"${EXPECTED_RES_00}\" and it was \"${RES_00%?}\" this could happen if the collection was empty";
    fi
    if [[ "${EXPECTED_RES_01}" != "${RES_01%?}" ]]; then
      fatal "expected \"${EXPECTED_RES_01}\" and it was \"${RES_01%?}\"";
@@ -93,7 +108,8 @@ if [[ "${BASH_SOURCE[0]}" = "$0" ]]; then
    
    oc delete jobs -l io.shyrka.erebus.tooling-info/role=mongodb-backup;
    oc delete jobs -l io.shyrka.erebus.tooling-info/role=mongodb-restore;
-   oc create -f src/test/resources/jobs-backup-mongodb.single.dtb.test.yaml;
+   
+   oc create -f ${JOB_SCRIPT_PATH}/${JOB_BACKUP};
    
    while [ -z $(oc get po -l app=bck-mongodb --no-headers | grep 'Completed') ] ; do 
      echo waiting;
@@ -118,7 +134,7 @@ if [[ "${BASH_SOURCE[0]}" = "$0" ]]; then
      fatal "expected \"${EXPECTED_RES_06}\" and it was \"${RES_06%?}\"";
    fi
    
-   oc create -f src/test/resources/jobs-restore-mongodb.test.yaml;
+   oc create -f ${JOB_SCRIPT_PATH}/${JOB_RESTORE};
 
    while [ -z $(oc get po -l app=rst-mongodb --no-headers | grep 'Completed') ] ; do 
      echo waiting;

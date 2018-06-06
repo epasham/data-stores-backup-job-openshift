@@ -25,19 +25,6 @@ This project should provide :
     
     
 # build
-#
-
-
-
-oc get namespace  $PRD_PROJECT_NAME -o json | jq -e '(.metadata.annotations."openshift.io/node-selector" |= . + "zone=production")' | oc replace namespace  $PRD_PROJECT_NAME -f -
-
-oc get bc backup-job -o json | jq -e '(.spec.strategy.dockerStrategy.dockerfilePath |= . + "./src/main/dockerfiles/Dockerfile")' | oc replace bc backup-job -f -
-
-
-
-| oc replace namespace  $PRD_PROJECT_NAME -f -
-
-
 
 oc new-build --name='bck-tools' --binary=true && \
 oc get bc bck-tools -o json | jq -e '(.spec.strategy.dockerStrategy.dockerfilePath |= . + "./src/main/dockerfiles/Dockerfile")' | oc replace bc backup-job -f - && \
@@ -55,14 +42,22 @@ oc delete jobs bck-mongodb ; oc start-build bck-tools --from-dir=. -F && oc crea
 
 
 0 - build image
+
 1.1 - start mysql ephemeral
+
 1.2 - import data into mysql ephemeral
+
 1.3 - check data from mysql ephemeral
+
 1.4 - backup mysql ephemeral
+
 1.5 - modify some data
+
 1.6 - check data are modified
+
 1.7 - restore mysql ephemeral
 
+src/test/test-scripts/test_mysql_back-up.sh
 
 
 
