@@ -2,6 +2,20 @@
 set -e
 set -o pipefail
 
+cat <<EOF >~/.s3cfg
+[default]
+EOF
+
+if [ a$http_proxy != 'a' ] ; then
+  proxy_host=`echo $http_proxy | sed -e 's@http://@@' -e 's/:.*$//'`
+  proxy_port=`echo $http_proxy | sed -e 's/^.*://' -e 's@/$@@'`
+
+  cat <<EOF >> ~/.s3cfg
+proxy_host = $proxy_host
+proxy_port = $proxy_port
+EOF
+fi
+
 copy_s3 () {
   SRC_FILE=$1
   DEST_FILE=$2
